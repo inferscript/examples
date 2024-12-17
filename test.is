@@ -12,6 +12,9 @@ type After3<T> = { [keyof T]: string };
 type Before4 = <T>(t: T) => T
 type After4 = <T>(T) => T
 
+type Before5 = A['B'];
+type After5 = A.B;
+
 export type IsStringLiteral<T extends string> = (!IsNever<UnionToIntersection<T>>) satisfies boolean;
 
 export function acceptsLiteralOnly<const T extends string constraints IsStringLiteral>(name: T): Record<T, number> {
