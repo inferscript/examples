@@ -16,7 +16,7 @@ export function acceptsLiteralOnly<const T extends string constraints IsStringLi
 };
 
 export type TransformTupleElement<T extends any[] constraints IsTuple, Transform<_>> = TransformTupleElementInternal<T, Transform, []>;
-type TransformTupleElementInternal<T extends any[], Transform<_>, Result extends any[]> = T extends [infer I, infer ...(infer Rest)] ? TransformTupleElementInternal<Rest, Transform, [...Result, Transform<I>]> : Result; // HKT support
+type TransformTupleElementInternal<T extends any[], Transform<_>, Result extends any[]> = T extends [infer I, ...(infer Rest)] ? TransformTupleElementInternal<Rest, Transform, [...Result, Transform<I>]> : Result; // HKT support
 
 export unique type MyArray<T> = T[];
 
