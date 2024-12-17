@@ -1,0 +1,63 @@
+import type { IsSameType, UnionToIntersection, IsNever } from './utils';
+
+type Before1<A, B, C> = IsSameType<A, B> extends true ? C : never;
+type After1<A, B, C> = IsSameType<A, B> ? C : never;
+
+type Before2<T> = { type: "some", T: T } | { type: "none" };
+type After2<T> = { type: "some", T } | { type: "none" };
+
+type Before3<T> = { [_ in keyof T]: string };
+type After3<T> = { [keyof T]: string };
+
+export type IsStringLiteral<T extends string> = (!IsNever<UnionToIntersection<T>>) satisfies boolean;
+
+export function acceptsLiteralOnly<const T extends string constraints IsStringLiteral>(name: T): Record<T, number> {
+    return { [name]: 42 };
+};
+
+export type TransformTupleElement<T extends any[] constraints IsTuple, Transform<_>> = TransformTupleElementInternal<T, Transform, []>;
+type TransformTupleElementInternal<T extends any[], Transform<_>, Result extends any[]> = T extends [infer I, infer ...(infer Rest)] ? TransformTupleElementInternal<Rest, Transform, [...Result, Transform<I>]> : Result; // HKT support
+
+export unique type MyArray<T> = T[];
+
+export extension function MyArray<T>.reverseIf(self, reverse: boolean): MyArray<T> = if reverse {
+    self.reverse()
+} else {
+    self
+};
+
+function notWorks() {
+    const someArray = [];
+    someArray.push(2);
+    someArray.push(4);
+    return someArray.reverseIf(true); // error: Property 'reverseIf' does not exist on type 'number[]'. Did you mean 'reverse'?
+}
+
+function works1() {
+    const someArray: MyArray<_> = [];
+    someArray.push(2);
+    someArray.push(4);
+    return someArray.reverseIf(true); // ok
+}
+
+function works2() {
+    const someArray = [];
+    someArray.push(2);
+    someArray.push(4);
+    return (someArray as MyArray<_>).reverseIf(true); // ok
+}
+
+export type Something {
+    some: string;
+}
+
+export function validateSomething(maybeSomething: any): asserts maybeSomething is Something {
+    const some =
+        && maybeSomething // leading && is ignored
+        && typeof maybeSomething === 'object'
+        && 'some' in maybeSomething
+        && typeof maybeSomething.some === 'string'
+        ? maybeSomething.some : throw new TypeError("No some field"); // throw is expression
+    const result = correctSomeString(some) ?? return false; // return is expression
+    return result == maybeSomething;
+}
