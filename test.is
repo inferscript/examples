@@ -1,44 +1,60 @@
-import type { IsSameType, UnionToIntersection, IsNever } from './utils';
+import type { IsSameType, UnionToIntersection } from './utils';
 
-type Before1<A, B, C> = IsSameType<A, B> extends true ? C : never;
-type After1<A, B, C> = IsSameType<A, B> ? C : never;
+// conditional types without extends if lhs is boolean
+type IfSameType<A, B, C, D> = IsSameType<A, B> ? C : D;
 
-type Before2<T> = { type: "some", T: T } | { type: "none" };
-type After2<T> = { type: "some", T } | { type: "none" };
+// A extends B is just a boolean
+type IsNever<T> = [T] extends [never];
 
-type Before3<T> = { [_ in keyof T]: string };
-type After3<T> = { [keyof T]: string };
+// field shorthand if field name === its type name
+type Option<T> = { type: "some", T } | { type: "none" };
 
-type Before4 = <T>(t: T) => T
-type After4 = <T>(T) => T
+// unused identifier and `in` can be omitted
+type FieldDescription<T> = { [keyof T]: string };
 
-type Before5 = A['B'];
-type After5 = A.B;
+// `T` in `T?` is type instead of name here
+type I = <T>(T?) => T | undefined
 
-export type IsStringLiteral<T extends string> = (!IsNever<UnionToIntersection<T>>) satisfies boolean;
+// access field by dot
+type ANumber = { A: number }.A;
 
+// type destructuring
+type { a: TypeA, TypeB, X: [Four, Two] } = Record<'a' | 'TypeB' | 'X', [4, 2]>;
+
+// supports ! in type
+export type IsStringLiteral<T extends string> = !IsNever<UnionToIntersection<T>>;
+
+// extra constraints on generic parameter
 export function acceptsLiteralOnly<const T extends string constraints IsStringLiteral>(name: T): Record<T, number> {
     return { [name]: 42 };
 };
 
+// HKT support
 export type TransformTupleElement<T extends any[] constraints IsTuple, Transform<_>> = TransformTupleElementInternal<T, Transform, []>;
 type TransformTupleElementInternal<T extends any[], Transform<_>, Result extends any[]> = T extends [infer I, ...(infer Rest)] ? TransformTupleElementInternal<Rest, Transform, [...Result, Transform<I>]> : Result; // HKT support
 
+// function body shorthand
+function newArray<T>(): T[] = [];
+
+// unique type can't be member of union type with types other than null, undefined
 export unique type MyArray<T> = T[];
 
+// extension function, if without parentheses, if expression
 export extension function MyArray<T>.reverseIf(self, reverse: boolean): MyArray<T> = if reverse {
     self.reverse()
 } else {
     self
 };
 
+// someArray will be inferred as number[]
 function notWorks() {
-    const someArray = [];
+    const someArray = newArray();
     someArray.push(2);
     someArray.push(4);
     return someArray.reverseIf(true); // error: Property 'reverseIf' does not exist on type 'number[]'. Did you mean 'reverse'?
 }
 
+// _ auto infer type placeholder
 function works1() {
     const someArray: MyArray<_> = [];
     someArray.push(2);
@@ -46,24 +62,26 @@ function works1() {
     return someArray.reverseIf(true); // ok
 }
 
+// extension functions can be defined/called on unique types
 function works2() {
-    const someArray = [];
+    const someArray = newArray();
     someArray.push(2);
     someArray.push(4);
     return (someArray as MyArray<_>).reverseIf(true); // ok
 }
 
+// no interface keyword
 export type Something {
     some: string;
 }
 
 export function validateSomething(maybeSomething: any): asserts maybeSomething is Something {
     const some =
-        && maybeSomething // leading && is ignored
+        && maybeSomething // leading && is allowed, ignored
         && typeof maybeSomething === 'object'
         && 'some' in maybeSomething
         && typeof maybeSomething.some === 'string'
         ? maybeSomething.some : throw new TypeError("No some field"); // throw is expression
     const result = correctSomeString(some) ?? return false; // return is expression
-    return result == maybeSomething;
+    result == maybeSomething // last expression without ';' is return
 }
