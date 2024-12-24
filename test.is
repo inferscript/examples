@@ -33,13 +33,10 @@ export function acceptsLiteralOnly<const T extends string constraints IsStringLi
 export type TransformTupleElement<T extends any[] constraints IsTuple, Transform<_>> = TransformTupleElementInternal<T, Transform, []>;
 type TransformTupleElementInternal<T extends any[], Transform<_>, Result extends any[]> = T extends [infer I, ...(infer Rest)] ? TransformTupleElementInternal<Rest, Transform, [...Result, Transform<I>]> : Result; // HKT support
 
-// function body shorthand
-function newArray<T>(): T[] = [];
-
 // unique type can't be member of union type with types other than null, undefined
 export unique type MyArray<T> = T[];
 
-// extension function, if without parentheses, if expression
+// function body shorthand, extension function, if without parentheses, if expression
 export extension function MyArray<T>.reverseIf(self, reverse: boolean): MyArray<T> = if reverse {
     self.reverse()
 } else {
@@ -48,7 +45,7 @@ export extension function MyArray<T>.reverseIf(self, reverse: boolean): MyArray<
 
 // someArray will be inferred as number[]
 function notWorks() {
-    const someArray = newArray();
+    const someArray = [];
     someArray.push(2);
     someArray.push(4);
     return someArray.reverseIf(true); // error: Property 'reverseIf' does not exist on type 'number[]'. Did you mean 'reverse'?
@@ -64,7 +61,7 @@ function works1() {
 
 // extension functions can be defined/called on unique types
 function works2() {
-    const someArray = newArray();
+    const someArray = [];
     someArray.push(2);
     someArray.push(4);
     return (someArray as MyArray<_>).reverseIf(true); // ok
@@ -75,13 +72,45 @@ export type Something {
     some: string;
 }
 
-export function validateSomething(maybeSomething: any): asserts maybeSomething is Something {
-    const some =
-        && maybeSomething // leading && is allowed, ignored
+export function validateSomething(maybeSomething: any): boolean asserts maybeSomething is Something {
+    const some = maybeSomething
         && typeof maybeSomething === 'object'
         && 'some' in maybeSomething
         && typeof maybeSomething.some === 'string'
         ? maybeSomething.some : throw new TypeError("No some field"); // throw is expression
     const result = correctSomeString(some) ?? return false; // return is expression
     result == maybeSomething // last expression without ';' is return
+}
+
+function ft(): number {
+    const num = 6;
+    const num = num * 7; // variable with same name in same scope
+    num
+}
+
+function unwrapNonNullable<T>(t?: T): T {
+    if const nonNullish = t { // if-let
+        return nonNullish;
+    }
+    throw new TypeError("Non-nullish value expected");
+    // or
+    const nonNullish = t else { // let-else
+        throw new TypeError("Non-nullish value expected");
+    }
+    nonNullish
+    // ... or simply
+    t!!
+}
+
+function optionalMap<T, U>(t: T | null | undefined, map: (t: T) => U) => U | null | undefined {
+    map(t??) // ?? is like ? in Rust
+}
+
+function pipelineOperator() {
+    // mul(7)(reduce(add, 0)(map(mul(2))(parseIntBase(10)(["1", "2", "3"]))))
+    ["1", "2", "3"]
+        |> map(parseIntBase(10))
+        |> map(mul(2))
+        |> reduce(add, 0)
+        |> mul(7)
 }
